@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/joho/godotenv"
+	"log"
 	"os"
 )
 
 func init() {
-	const connectionUrl = "postgres://postgres:password@localhost:5432/go_comerce?sslmode=disable"
-	conn, err := sql.Open("pgx", connectionUrl)
+	conn, err := sql.Open("pgx", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		fmt.Printf("We have an error %v", err)
 		os.Exit(1)
@@ -26,5 +27,8 @@ func init() {
 }
 
 func main() {
-	fmt.Println("Hello, world!")
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 }
