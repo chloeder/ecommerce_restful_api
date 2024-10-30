@@ -2,26 +2,28 @@ package routes
 
 import (
 	"commerce-project/services"
+	"database/sql"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
 )
 
-func Routes() {
+func Routes(db *sql.DB) error {
 	router := gin.Default()
 
 	v1 := router.Group("/api/v1")
 	{
-		v1.GET("/products", services.GetProducts())
-		v1.GET("/products/{id}", services.GetProductById())
+		v1.GET("/products", services.GetProducts(db))
+		v1.GET("/products/:id", services.GetProductById(db))
 		//v1.POST("/checkout", checkoutProduct)
 	}
 
 	admin := router.Group("/api/admin")
 	{
-		admin.POST("/products", services.CreateProducts())
-		admin.PUT("/products/{id}", services.UpdateProducts())
-		admin.DELETE("/products/{id}", services.DeleteProducts())
+		admin.POST("/products", services.CreateProducts(db))
+		admin.PUT("/products/:id", services.UpdateProducts(db))
+		admin.DELETE("/products/:id", services.SoftDeletedProducts(db))
+		admin.DELETE("/hard-delete/products/:id", services.HardDeletedProducts(db))
 	}
 
 	s := &http.Server{
@@ -36,4 +38,5 @@ func Routes() {
 		panic(err)
 	}
 
+	return nil
 }
