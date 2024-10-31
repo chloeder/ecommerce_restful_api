@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"commerce-project/middleware"
 	"commerce-project/services"
 	"database/sql"
 	"github.com/gin-gonic/gin"
@@ -20,10 +21,10 @@ func Routes(db *sql.DB) error {
 
 	admin := router.Group("/api/admin")
 	{
-		admin.POST("/products", services.CreateProducts(db))
-		admin.PUT("/products/:id", services.UpdateProducts(db))
-		admin.DELETE("/products/:id", services.SoftDeletedProducts(db))
-		admin.DELETE("/hard-delete/products/:id", services.HardDeletedProducts(db))
+		admin.POST("/products", middleware.AdminMiddleware(), services.CreateProducts(db))
+		admin.PUT("/products/:id", middleware.AdminMiddleware(), services.UpdateProducts(db))
+		admin.DELETE("/products/:id", middleware.AdminMiddleware(), services.SoftDeletedProducts(db))
+		admin.DELETE("/hard-delete/products/:id", middleware.AdminMiddleware(), services.HardDeletedProducts(db))
 	}
 
 	s := &http.Server{
