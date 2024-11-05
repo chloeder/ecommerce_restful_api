@@ -3,6 +3,8 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"strings"
 )
 
 type Product struct {
@@ -20,6 +22,40 @@ func SelectAllProducts(db *sql.DB) ([]Product, error) {
 	query := `SELECT id, name, price FROM products WHERE is_deleted = FALSE;`
 
 	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []Product
+	for rows.Next() {
+		var product Product
+		err := rows.Scan(&product.ID, &product.Name, &product.Price)
+		if err != nil {
+			return nil, err
+		}
+
+		products = append(products, product)
+	}
+
+	return products, nil
+}
+
+func SelectProductsIn(db *sql.DB, ids []string) ([]Product, error) {
+	if db == nil {
+		return nil, errors.New("No Database Connected")
+	}
+
+	placeholders := []string{}
+	args := []any{}
+	for i, id := range ids {
+		placeholders = append(placeholders, fmt.Sprintf("$%d", i+1))
+		args = append(args, id)
+	}
+
+	query := fmt.Sprintf(`SELECT id, name, price FROM products WHERE is_deleted = FALSE AND id IN (%s);`,
+		strings.Join(placeholders, ","))
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}

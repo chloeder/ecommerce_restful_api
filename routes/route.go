@@ -16,7 +16,7 @@ func Routes(db *sql.DB) error {
 	{
 		v1.GET("/products", services.GetProducts(db))
 		v1.GET("/products/:id", services.GetProductById(db))
-		//v1.POST("/checkout", checkoutProduct)
+		v1.POST("/checkout", services.CheckoutOrder(db))
 	}
 
 	admin := router.Group("/api/admin")
