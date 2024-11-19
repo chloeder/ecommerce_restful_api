@@ -5,17 +5,28 @@ import (
 	"errors"
 )
 
-type Checkout struct {
-	Email    string            `json:"email"`
-	Address  string            `json:"address"`
-	Products []ProductQuantity `json:"products"`
-}
-
+// ProductQuantity is representing the product ID and quantity in API request
 type ProductQuantity struct {
-	ID       string `json:"id"`
-	Quantity int32  `json:"quantity"`
+	ID       string `json:"id" binding:"required"`
+	Quantity int32  `json:"quantity" binding:"required"`
 }
 
+// Checkout is representing the checkout in API request
+type Checkout struct {
+	Email    string            `json:"email" binding:"required,email"`
+	Address  string            `json:"address" binding:"required"`
+	Products []ProductQuantity `json:"products"  binding:"min=1"`
+}
+
+// OrderConfirmation is representing the order confirmation in API response
+type OrderConfirmation struct {
+	Amount        int64  `json:"amount" binding:"required"`
+	Bank          string `json:"bank" binding:"required"`
+	AccountNumber string `json:"account_number" binding:"required"`
+	Passcode      string `json:"passcode"`
+}
+
+// Order is representing the order in database
 type Order struct {
 	ID                string  `json:"id"`
 	Email             string  `json:"email"`
@@ -27,6 +38,7 @@ type Order struct {
 	PaidAccountNumber *string `json:"paid_account_number,omitempty"`
 }
 
+// OrderDetail is representing the order detail in database
 type OrderDetail struct {
 	ID        string `json:"id"`
 	OrderID   string `json:"order_id"`
@@ -36,6 +48,7 @@ type OrderDetail struct {
 	Total     int64  `json:"total"`
 }
 
+// OrderWithDetail is representing the order with detail in API response (without passcode)
 type OrderWithDetail struct {
 	Order
 	Details []OrderDetail `json:"details"`
@@ -84,4 +97,27 @@ func CreateOrder(db *sql.DB, order Order, details []OrderDetail) error {
 	}
 
 	return nil
+}
+
+func SelectOrderById(db *sql.DB, id string) (Order, error) {
+	// Check if the database is connected
+	if db == nil {
+		return Order{}, errors.New("No Database Connected")
+	}
+
+	// Query to select order by id
+	queryOrder := `SELECT id, email, address, grand_total, passcode, paid_at, paid_bank, paid_account_number FROM orders WHERE id = $1`
+	row := db.QueryRow(queryOrder, id)
+
+	// Make variable to store the result
+	order := Order{}
+
+	// Scan the result to the variable
+	err := row.Scan(&order.ID, &order.Email, &order.Address, &order.GrandTotal, &order.Passcode, &order.PaidAt, &order.PaidBank, &order.PaidAccountNumber)
+	if err != nil {
+		return Order{}, err
+	}
+
+	// Return the result
+	return order, nil
 }

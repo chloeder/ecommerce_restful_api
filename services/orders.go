@@ -112,8 +112,67 @@ func CheckoutOrder(db *sql.DB) gin.HandlerFunc {
 func ConfirmOrder(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// Get id order from url
+		orderId := ctx.Param("id")
 
-		// Get passcode from request body
+		// Get the request body
+		var confirm models.OrderConfirmation
+		if err := ctx.BindJSON(&confirm); err != nil {
+			log.Printf("Error: %v", err)
+			ctx.JSON(400, gin.H{
+				"error": "Invalid request body",
+			})
+			return
+		}
+
+		// Get order from database
+		order, err := models.SelectOrderById(db, orderId)
+		if err != nil {
+			log.Printf("Error: %v", err)
+			if err == sql.ErrNoRows {
+				ctx.JSON(404, gin.H{
+					"error": "Order not found",
+				})
+				return
+			}
+			ctx.JSON(500, gin.H{
+				"error": "Internal server error",
+			})
+		}
+
+		// Make sure passcode not empty
+		if order.Passcode == nil {
+			ctx.JSON(400, gin.H{
+				"error": "Passcode not found",
+			})
+			return
+		}
+
+		// Compare passcode
+		err = bcrypt.CompareHashAndPassword([]byte(*order.Passcode), []byte(confirm.Passcode))
+		if err != nil {
+			ctx.JSON(400, gin.H{
+				"error": "Invalid passcode",
+			})
+			return
+		}
+
+		// Check if order already paid
+		if order.PaidAt != nil {
+			ctx.JSON(400, gin.H{
+				"error": "Order already paid",
+			})
+			return
+		}
+
+		// Check if grand total and amount not match
+		if order.GrandTotal != confirm.Amount {
+			ctx.JSON(400, gin.H{
+				"error": "Amount not match",
+			})
+			return
+		}
+
+		// TODO: Update order data
 	}
 }
 
