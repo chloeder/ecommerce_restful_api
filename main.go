@@ -1,13 +1,14 @@
 package main
 
 import (
-	"commerce-project/migration"
-	"commerce-project/routes"
 	"database/sql"
-	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
+
+	"commerce-project/migration"
+	"commerce-project/routes"
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/joho/godotenv"
 )
 
 func main() {

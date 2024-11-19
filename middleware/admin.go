@@ -1,10 +1,11 @@
 package middleware
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
+
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func AdminMiddleware() gin.HandlerFunc {

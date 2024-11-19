@@ -1,9 +1,10 @@
 package services
 
 import (
-	"commerce-project/models"
 	"database/sql"
 	"errors"
+
+	"commerce-project/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )

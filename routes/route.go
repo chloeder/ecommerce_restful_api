@@ -1,12 +1,13 @@
 package routes
 
 import (
-	"commerce-project/middleware"
-	"commerce-project/services"
 	"database/sql"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
+
+	"commerce-project/middleware"
+	"commerce-project/services"
+	"github.com/gin-gonic/gin"
 )
 
 func Routes(db *sql.DB) error {
