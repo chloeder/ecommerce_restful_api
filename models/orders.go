@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"time"
 )
 
 // ProductQuantity is representing the product ID and quantity in API request
@@ -120,4 +121,20 @@ func SelectOrderById(db *sql.DB, id string) (Order, error) {
 
 	// Return the result
 	return order, nil
+}
+
+func UpdateOrderStatus(db *sql.DB, id string, confirmation OrderConfirmation, paidAt time.Time) error {
+	//	Check if the database is connected
+	if db == nil {
+		return errors.New("no Database Connected")
+	}
+
+	//	Query to update order status
+	query := `UPDATE orders SET paid_at = $1, paid_bank = $2, paid_account_number = $3 WHERE id = $4`
+	_, err := db.Exec(query, paidAt, confirmation.Bank, confirmation.AccountNumber, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

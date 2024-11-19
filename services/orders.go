@@ -3,6 +3,7 @@ package services
 import (
 	"database/sql"
 	"log"
+	"time"
 
 	"commerce-project/models"
 	"commerce-project/utils"
@@ -173,6 +174,27 @@ func ConfirmOrder(db *sql.DB) gin.HandlerFunc {
 		}
 
 		// TODO: Update order data
+		currentTime := time.Now()
+		if err := models.UpdateOrderStatus(db, orderId, confirm, currentTime); err != nil {
+			log.Printf("Error: %v", err)
+			ctx.JSON(500, gin.H{
+				"error": "Internal server error",
+			})
+			return
+		}
+		// Formatted time to string
+		formattedTime := currentTime.Format("2006-01-02 15:04:05")
+		// Dont show passcode in response & only show passcode when order is created
+		order.Passcode = nil
+		// Update response with paid_at, paid_bank, and paid_account_number
+		order.PaidAt = &formattedTime
+		order.PaidBank = &confirm.Bank
+		order.PaidAccountNumber = &confirm.AccountNumber
+
+		ctx.JSON(200, gin.H{
+			"message": "Order confirmed successfully",
+			"data":    order,
+		})
 	}
 }
 

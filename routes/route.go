@@ -15,11 +15,17 @@ func Routes(db *sql.DB) error {
 
 	v1 := router.Group("/api/v1")
 	{
+		// Public Routes
 		v1.GET("/products", services.GetProducts(db))
 		v1.GET("/products/:id", services.GetProductById(db))
 		v1.POST("/checkout", services.CheckoutOrder(db))
+
+		//	Routes with passcode
+		v1.POST("/:id/confirm-order", services.ConfirmOrder(db))
+		//v1.GET("/orders/:id", services.GetOrders(db))
 	}
 
+	// Admin Routes
 	admin := router.Group("/api/admin")
 	{
 		admin.POST("/products", middleware.AdminMiddleware(), services.CreateProducts(db))
