@@ -138,3 +138,35 @@ func UpdateOrderStatus(db *sql.DB, id string, confirmation OrderConfirmation, pa
 
 	return nil
 }
+
+func SelectOrderDetailByOrderId(db *sql.DB, orderId string) ([]OrderDetail, error) {
+	// Check if the database is connected
+	if db == nil {
+		return nil, errors.New("no Database Connected")
+	}
+
+	// Query to select order detail by order id
+	query := `SELECT id, order_id, product_id, quantity, price, total FROM order_details WHERE order_id = $1`
+	rows, err := db.Query(query, orderId)
+	if err != nil {
+		return nil, err
+	}
+
+	// Make variable to store the result
+	var orderDetails []OrderDetail
+
+	// Loop the result
+	for rows.Next() {
+		var orderDetail OrderDetail
+		err := rows.Scan(&orderDetail.ID, &orderDetail.OrderID, &orderDetail.ProductID, &orderDetail.Quantity, &orderDetail.Price, &orderDetail.Total)
+		if err != nil {
+			return nil, err
+		}
+
+		// Append the result to the variable
+		orderDetails = append(orderDetails, orderDetail)
+	}
+
+	// Return the result
+	return orderDetails, nil
+}

@@ -2,6 +2,7 @@ package services
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 	"time"
 
@@ -60,6 +61,7 @@ func CheckoutOrder(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
+		// Convert hashed passcode to string
 		hashedPasscodeString := string(hashedPasscode)
 
 		// TODO: Create Order and OrderDetail
@@ -70,8 +72,9 @@ func CheckoutOrder(db *sql.DB) gin.HandlerFunc {
 			GrandTotal: 0,
 			Passcode:   &hashedPasscodeString,
 		}
-
+		// Calculate grand total and create detail order
 		var detailOrders []models.OrderDetail
+		// Loop through products and create detail order
 		for _, p := range products {
 			detailOrder := models.OrderDetail{
 				ID:        uuid.New().String(),
@@ -82,6 +85,7 @@ func CheckoutOrder(db *sql.DB) gin.HandlerFunc {
 				Total:     p.Price * int64(orderQty[p.ID]),
 			}
 
+			// Calculate grand total
 			order.GrandTotal += detailOrder.Total
 			detailOrders = append(detailOrders, detailOrder)
 		}
@@ -96,13 +100,16 @@ func CheckoutOrder(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
+		// Don't show passcode in response & only show passcode when order is created
 		order.Passcode = &passcode
 
+		// Response with order and detail order
 		response := models.OrderWithDetail{
 			Order:   order,
 			Details: detailOrders,
 		}
 
+		// Response with status 201 Created
 		ctx.JSON(201, gin.H{
 			"message": "Order created successfully",
 			"data":    response,
@@ -127,9 +134,12 @@ func ConfirmOrder(db *sql.DB) gin.HandlerFunc {
 
 		// Get order from database
 		order, err := models.SelectOrderById(db, orderId)
+		// Check if error
 		if err != nil {
 			log.Printf("Error: %v", err)
-			if err == sql.ErrNoRows {
+
+			// Check if order not found
+			if errors.Is(err, sql.ErrNoRows) {
 				ctx.JSON(404, gin.H{
 					"error": "Order not found",
 				})
@@ -184,22 +194,88 @@ func ConfirmOrder(db *sql.DB) gin.HandlerFunc {
 		}
 		// Formatted time to string
 		formattedTime := currentTime.Format("2006-01-02 15:04:05")
-		// Dont show passcode in response & only show passcode when order is created
+		// Don't show passcode in response & only show passcode when order is created
 		order.Passcode = nil
 		// Update response with paid_at, paid_bank, and paid_account_number
 		order.PaidAt = &formattedTime
 		order.PaidBank = &confirm.Bank
 		order.PaidAccountNumber = &confirm.AccountNumber
 
+		// Response with order data
 		ctx.JSON(200, gin.H{
 			"message": "Order confirmed successfully",
 			"data":    order,
 		})
+
 	}
 }
 
 func GetOrder(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		// code here
+		// Get order id from url
+		orderId := ctx.Param("id")
+
+		//	Get parameter from query parameter
+		//	Example: /orders?id=1
+		passcode := ctx.Query("passcode")
+
+		// Get order from database
+		order, err := models.SelectOrderById(db, orderId)
+		// Check if error
+		if err != nil {
+			log.Printf("Error: %v", err)
+
+			// Check if order not found
+			if errors.Is(err, sql.ErrNoRows) {
+				ctx.JSON(404, gin.H{
+					"error": "Order not found",
+				})
+				return
+			}
+			ctx.JSON(500, gin.H{
+				"error": "Internal server error",
+			})
+		}
+
+		// Make sure passcode not empty
+		if order.Passcode == nil {
+			ctx.JSON(400, gin.H{
+				"error": "Passcode not found",
+			})
+			return
+		}
+
+		// Compare passcode
+		err = bcrypt.CompareHashAndPassword([]byte(*order.Passcode), []byte(passcode))
+		if err != nil {
+			ctx.JSON(400, gin.H{
+				"error": "Invalid passcode",
+			})
+			return
+		}
+
+		// Get order detail from database
+		orderDetails, err := models.SelectOrderDetailByOrderId(db, orderId)
+		if err != nil {
+			log.Printf("Error: %v", err)
+			ctx.JSON(500, gin.H{
+				"error": "Internal server error",
+			})
+			return
+		}
+
+		// Don't show passcode in response & only show passcode when order is created
+		order.Passcode = nil
+
+		response := models.OrderWithDetail{
+			Order:   order,
+			Details: orderDetails,
+		}
+
+		// Response with order and detail order
+		ctx.JSON(200, gin.H{
+			"message": "Order found",
+			"data":    response,
+		})
 	}
 }

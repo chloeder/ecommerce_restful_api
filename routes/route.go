@@ -22,7 +22,7 @@ func Routes(db *sql.DB) error {
 
 		//	Routes with passcode
 		v1.POST("/:id/confirm-order", services.ConfirmOrder(db))
-		//v1.GET("/orders/:id", services.GetOrders(db))
+		v1.GET("/orders/:id", services.GetOrder(db))
 	}
 
 	// Admin Routes

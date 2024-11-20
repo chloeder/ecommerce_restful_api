@@ -24,6 +24,7 @@ func main() {
 	}
 	defer db.Close()
 
+	// Check database connection
 	err = db.Ping()
 	if err != nil {
 		log.Fatal(err)
